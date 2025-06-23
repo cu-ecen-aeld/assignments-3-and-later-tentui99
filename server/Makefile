@@ -1,7 +1,7 @@
 TARGET = aesdsocket
 
 # Sử dụng compiler từ Buildroot (BUILDROOT sẽ cung cấp biến $(CC))
-CC ?= gcc
+CC ?= aarch64-buildroot-linux-gnu-gcc
 
 CFLAGS ?= -Wall -Werror -g
 
