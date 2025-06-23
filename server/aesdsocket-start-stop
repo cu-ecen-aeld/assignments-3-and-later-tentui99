@@ -1,0 +1,19 @@
+#!/bin/sh
+# Init script to start aesdsocket as a daemon
+
+case "$1" in
+  start)
+    echo "Starting aesdsocket"
+    /usr/bin/aesdsocket -d
+    ;;
+  stop)
+    echo "Stopping aesdsocket"
+    killall aesdsocket
+    ;;
+  *)
+    echo "Usage: $0 {start|stop}"
+    exit 1
+    ;;
+esac
+
+exit 0
