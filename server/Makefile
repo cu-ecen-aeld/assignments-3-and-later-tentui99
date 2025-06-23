@@ -1,6 +1,9 @@
-TARGET=aesdsocket
-CC=gcc
-CFLAGS=-Wall -Werror -g
+TARGET = aesdsocket
+
+# Sử dụng compiler từ Buildroot (BUILDROOT sẽ cung cấp biến $(CC))
+CC ?= gcc
+
+CFLAGS ?= -Wall -Werror -g
 
 all: $(TARGET)
 
