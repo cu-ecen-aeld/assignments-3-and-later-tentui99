@@ -111,10 +111,12 @@ int main(int argc, char *argv[]) {
             if (memchr(buffer, '\n', bytes_received)) break;
         }
 
+        // === Ghi dữ liệu vào file ===
         if (recv_data) {
             FILE *fp = fopen(DATA_FILE, "a");
             if (fp) {
                 fwrite(recv_data, 1, total_len, fp);
+                fflush(fp); // đảm bảo ghi xuống disk
                 fclose(fp);
             } else {
                 syslog(LOG_ERR, "Failed to open file for writing");
@@ -122,6 +124,7 @@ int main(int argc, char *argv[]) {
             free(recv_data);
         }
 
+        // === Gửi lại nội dung file ===
         FILE *fp = fopen(DATA_FILE, "r");
         if (fp) {
             while ((bytes_received = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
