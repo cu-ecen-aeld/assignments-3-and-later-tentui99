@@ -100,17 +100,25 @@ int main(int argc, char *argv[]) {
     }
 
     // Ghi dữ liệu vào file
-    if (recv_data) {
-        FILE *fp = fopen(DATA_FILE, "a");
-        if (fp) {
-            fwrite(recv_data, 1, total_len, fp);
-            fclose(fp);
-        } else {
-            syslog(LOG_ERR, "Failed to open file for writing");
+   if (recv_data) {
+    FILE *fp = fopen(DATA_FILE, "a");
+    if (fp) {
+        // Đảm bảo có dấu \n ở cuối
+        if (recv_data[total_len - 1] != '\n') {
+            recv_data = realloc(recv_data, total_len + 2); // +1 để thêm \n, +1 cho '\0'
+            recv_data[total_len] = '\n';
+            recv_data[total_len + 1] = '\0';
+            total_len += 1;
         }
 
-        free(recv_data);
+        fwrite(recv_data, 1, total_len, fp);
+        fclose(fp);
+    } else {
+        syslog(LOG_ERR, "Failed to open file for writing");
     }
+
+    free(recv_data);
+}
 
     // Gửi lại toàn bộ nội dung file cho client
     FILE *fp = fopen(DATA_FILE, "r");
