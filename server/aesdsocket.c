@@ -1,45 +1,54 @@
-// server/aesdsocket.c
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netinet/in.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
 #include <sys/types.h>
-#include <syslog.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <netdb.h>
+#include <string.h>
+#include <stdio.h>
+#include <signal.h>
+#include <syslog.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 
-#define PORT 9000
-#define BACKLOG 5
-#define BUFFER_SIZE 1024
-#define DATA_FILE "/var/tmp/aesdsocketdata"
+#define BACKLOG (10)
+#define PORT "9000"
+#define MY_MAX_SIZE 500
 
-int sockfd = -1;
-int client_sock = -1;
+struct addrinfo *p;
+int socketfd = -1;
+int new_fd = -1;
+int fd = -1;
 
-void cleanup_and_exit(int sig) {
+void cleanup()
+{
+    if (fd != -1) close(fd);
+    if (socketfd != -1) close(socketfd);
+    if (new_fd != -1) close(new_fd);
+    if (p) freeaddrinfo(p);
+    remove("/var/tmp/aesdsocketdata.txt");
+}
+
+void signal_handler(int signo)
+{
     syslog(LOG_INFO, "Caught signal, exiting");
-    if (client_sock != -1) close(client_sock);
-    if (sockfd != -1) close(sockfd);
-    remove(DATA_FILE);
+    cleanup();
     closelog();
     exit(0);
 }
 
-void daemonize() {
+void daemonize()
+{
     pid_t pid = fork();
     if (pid < 0) exit(EXIT_FAILURE);
-    if (pid > 0) exit(EXIT_SUCCESS);
+    if (pid > 0) exit(EXIT_SUCCESS); // Parent exits
 
     if (setsid() < 0) exit(EXIT_FAILURE);
 
     pid = fork();
     if (pid < 0) exit(EXIT_FAILURE);
-    if (pid > 0) exit(EXIT_SUCCESS);
+    if (pid > 0) exit(EXIT_SUCCESS); // First child exits
 
     umask(0);
     chdir("/");
@@ -49,108 +58,117 @@ void daemonize() {
     close(STDERR_FILENO);
 }
 
-int main(int argc, char *argv[]) {
-    struct sockaddr_in serv_addr, client_addr;
-    socklen_t addrlen = sizeof(client_addr);
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_received;
+int main(int argc, char *argv[])
+{
+    struct addrinfo hints, *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
     openlog("aesdsocket", LOG_PID, LOG_USER);
 
-    // Handle daemon mode
     if (argc == 2 && strcmp(argv[1], "-d") == 0) {
         daemonize();
     }
 
-    signal(SIGINT, cleanup_and_exit);
-    signal(SIGTERM, cleanup_and_exit);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        syslog(LOG_ERR, "Socket creation failed: %s", strerror(errno));
+    if (getaddrinfo(NULL, PORT, &hints, &res) != 0) {
+        syslog(LOG_ERR, "getaddrinfo failed");
         return -1;
     }
 
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    for (p = res; p != NULL; p = p->ai_next) {
+        socketfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (socketfd == -1) continue;
 
-    int enable = 1;
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+        int yes = 1;
+        setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
-    if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
-        syslog(LOG_ERR, "Bind failed: %s", strerror(errno));
-        close(sockfd);
+        if (bind(socketfd, p->ai_addr, p->ai_addrlen) == 0) break;
+        close(socketfd);
+        socketfd = -1;
+    }
+
+    if (p == NULL) {
+        syslog(LOG_ERR, "Failed to bind socket");
+        freeaddrinfo(res);
         return -1;
     }
 
-    listen(sockfd, BACKLOG);
+    freeaddrinfo(res);
 
-    while (1) {
-        client_sock = accept(sockfd, (struct sockaddr *)&client_addr, &addrlen);
-        if (client_sock == -1) {
-            syslog(LOG_ERR, "Accept failed: %s", strerror(errno));
+    if (listen(socketfd, BACKLOG) == -1) {
+        syslog(LOG_ERR, "Listen failed");
+        return -1;
+    }
+
+    // Truncate file mỗi lần server chạy (để test.sh không fail)
+    int truncate_fd = open("/var/tmp/aesdsocketdata.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (truncate_fd != -1) {
+        close(truncate_fd);
+    } else {
+        syslog(LOG_ERR, "Failed to truncate file");
+    }
+
+    while (1)
+    {
+        struct sockaddr_storage client_addr;
+        socklen_t addr_size = sizeof(client_addr);
+        new_fd = accept(socketfd, (struct sockaddr *)&client_addr, &addr_size);
+        if (new_fd == -1) {
+            syslog(LOG_ERR, "Accept failed");
             continue;
         }
 
         char client_ip[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
+        struct sockaddr_in *s = (struct sockaddr_in *)&client_addr;
+        inet_ntop(AF_INET, &s->sin_addr, client_ip, sizeof(client_ip));
         syslog(LOG_INFO, "Accepted connection from %s", client_ip);
 
-        // === Receive data until '\n' ===
-        char *recv_data = NULL;
+        char *buf = malloc(MY_MAX_SIZE);
         size_t total_len = 0;
+        size_t current_buf_size = MY_MAX_SIZE;
         int found_newline = 0;
 
-        while (!found_newline && (bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
-            recv_data = realloc(recv_data, total_len + bytes_received + 1);
-            if (!recv_data) {
-                syslog(LOG_ERR, "Memory allocation failed");
-                break;
-            }
-            memcpy(recv_data + total_len, buffer, bytes_received);
-            total_len += bytes_received;
-            recv_data[total_len] = '\0';
+        while (!found_newline) {
+            ssize_t rc = recv(new_fd, buf + total_len, current_buf_size - total_len, 0);
+            if (rc <= 0) break;
+            total_len += rc;
 
-            if (memchr(buffer, '\n', bytes_received)) {
+            if (memchr(buf, '\n', total_len)) {
                 found_newline = 1;
             }
-        }
 
-        // === Ghi dữ liệu nhận được vào file ===
-        if (recv_data) {
-            FILE *fp = fopen(DATA_FILE, "a");
-            if (fp) {
-                // Chỉ ghi đến vị trí dấu '\n'
-                char *newline_ptr = memchr(recv_data, '\n', total_len);
-                if (newline_ptr) {
-                    size_t write_len = (newline_ptr - recv_data) + 1;
-                    fwrite(recv_data, 1, write_len, fp);
-                }
-                fclose(fp);
-            } else {
-                syslog(LOG_ERR, "Failed to open file for writing");
+            if (total_len == current_buf_size) {
+                current_buf_size *= 2;
+                buf = realloc(buf, current_buf_size);
             }
-            free(recv_data);
         }
 
-        // === Trả lại toàn bộ nội dung file ===
-        FILE *fp = fopen(DATA_FILE, "r");
-        if (fp) {
-            while ((bytes_received = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
-                send(client_sock, buffer, bytes_received, 0);
-            }
-            fclose(fp);
-        } else {
-            syslog(LOG_ERR, "Failed to open file for reading");
+        fd = open("/var/tmp/aesdsocketdata.txt", O_RDWR | O_CREAT | O_APPEND, 0644);
+        if (fd != -1 && total_len > 0) {
+            write(fd, buf, total_len);
         }
 
+        lseek(fd, 0, SEEK_SET);
+        char sendbuf[MY_MAX_SIZE];
+        ssize_t rd;
+        while ((rd = read(fd, sendbuf, sizeof(sendbuf))) > 0) {
+            send(new_fd, sendbuf, rd, 0);
+        }
+
+        close(fd);
+        fd = -1;
+        close(new_fd);
+        new_fd = -1;
+        free(buf);
         syslog(LOG_INFO, "Closed connection from %s", client_ip);
-        close(client_sock);
-        client_sock = -1;
     }
 
+    cleanup();
     closelog();
     return 0;
 }
