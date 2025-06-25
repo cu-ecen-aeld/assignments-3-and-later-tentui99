@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #define PORT 9000
 #define BACKLOG 5
@@ -31,7 +33,7 @@ void cleanup_and_exit(int sig) {
 void daemonize() {
     pid_t pid = fork();
     if (pid < 0) exit(EXIT_FAILURE);
-    if (pid > 0) exit(EXIT_SUCCESS); // Parent exits
+    if (pid > 0) exit(EXIT_SUCCESS);
 
     if (setsid() < 0) exit(EXIT_FAILURE);
 
@@ -52,8 +54,6 @@ int main(int argc, char *argv[]) {
     socklen_t addrlen = sizeof(client_addr);
     char buffer[BUFFER_SIZE];
     ssize_t bytes_received;
-    char *recv_data = NULL;
-    size_t total_len = 0;
 
     openlog("aesdsocket", LOG_PID, LOG_USER);
 
@@ -76,6 +76,9 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_port = htons(PORT);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
+    int enable = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
         syslog(LOG_ERR, "Bind failed: %s", strerror(errno));
         close(sockfd);
@@ -95,10 +98,12 @@ int main(int argc, char *argv[]) {
         inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, INET_ADDRSTRLEN);
         syslog(LOG_INFO, "Accepted connection from %s", client_ip);
 
-        recv_data = NULL;
-        total_len = 0;
+        // === Receive data until '\n' ===
+        char *recv_data = NULL;
+        size_t total_len = 0;
+        int found_newline = 0;
 
-        while ((bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
+        while (!found_newline && (bytes_received = recv(client_sock, buffer, sizeof(buffer), 0)) > 0) {
             recv_data = realloc(recv_data, total_len + bytes_received + 1);
             if (!recv_data) {
                 syslog(LOG_ERR, "Memory allocation failed");
@@ -108,15 +113,21 @@ int main(int argc, char *argv[]) {
             total_len += bytes_received;
             recv_data[total_len] = '\0';
 
-            if (memchr(recv_data, '\n', total_len)) break;
+            if (memchr(buffer, '\n', bytes_received)) {
+                found_newline = 1;
+            }
         }
 
-        // === Ghi dữ liệu vào file ===
+        // === Ghi dữ liệu nhận được vào file ===
         if (recv_data) {
             FILE *fp = fopen(DATA_FILE, "a");
             if (fp) {
-                fwrite(recv_data, 1, total_len, fp);
-                fflush(fp); // đảm bảo ghi xuống disk
+                // Chỉ ghi đến vị trí dấu '\n'
+                char *newline_ptr = memchr(recv_data, '\n', total_len);
+                if (newline_ptr) {
+                    size_t write_len = (newline_ptr - recv_data) + 1;
+                    fwrite(recv_data, 1, write_len, fp);
+                }
                 fclose(fp);
             } else {
                 syslog(LOG_ERR, "Failed to open file for writing");
@@ -124,7 +135,7 @@ int main(int argc, char *argv[]) {
             free(recv_data);
         }
 
-        // === Gửi lại nội dung file ===
+        // === Trả lại toàn bộ nội dung file ===
         FILE *fp = fopen(DATA_FILE, "r");
         if (fp) {
             while ((bytes_received = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
