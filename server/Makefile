@@ -1,6 +1,6 @@
 TARGET = aesdsocket
-
-CC := $(CROSS_COMPILE)gcc
+#$(CROSS_COMPILE)
+CC := gcc
 CFLAGS ?= -Wall -Werror -g
 
 all: $(TARGET)
