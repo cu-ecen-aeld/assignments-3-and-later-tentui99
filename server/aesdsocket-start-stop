@@ -4,6 +4,7 @@
 case "$1" in
   start)
     echo "Starting aesdsocket"
+    rm -f /var/tmp/aesdsocketdata.txt   # <<== QUAN TRỌNG: reset file cũ
     /usr/bin/aesdsocket -d
     ;;
   stop)
