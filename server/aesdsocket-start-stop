@@ -19,6 +19,7 @@ PIDFILE=/var/run/${NAME}.pid
 start() {
     log_daemon_msg "Starting $DESC" "$NAME"
     rm -f /var/tmp/aesdsocketdata.txt  # Xoá file cũ trước
+       echo "Đã xoá /var/tmp/aesdsocketdata.txt"
     start-stop-daemon --start --quiet --background \
         --make-pidfile --pidfile "$PIDFILE" \
         --exec "$DAEMON" -- $DAEMON_OPTS
