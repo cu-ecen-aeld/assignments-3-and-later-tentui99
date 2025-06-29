@@ -1,16 +1,20 @@
-TARGET = aesdsocket
-#$(CROSS_COMPILE)
-CC := gcc
-CFLAGS ?= -Wall -Werror -g
+CC = gcc
+CFLAGS= -Wall -Werror
+LDFLAGS=
+CROSS_COMPILE=
 
-all: $(TARGET)
+EXECUTABLE=aesdsocket
+SOURCES=aesdsocket.c
+OBJECTS=$(SOURCES:.c=.o)
 
-$(TARGET): aesdsocket.c
-	@echo ">>> Using compiler: $(CC)"
-	$(CC) $(CFLAGS) -o $(TARGET) aesdsocket.c
+all: $(EXECUTABLE) $(OBJECTS)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CROSS_COMPILE)$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+
+$(OBJECTS): $(SOURCES)
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) -c $<
+
 
 clean:
-	rm -f $(TARGET)
-
-.PHONY: all clean
-
+	rm -f $(EXECUTABLE) $(OBJECTS)
