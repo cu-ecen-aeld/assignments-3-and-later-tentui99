@@ -1,0 +1,113 @@
+[33mcommit de76e207b5b82d029a1a71e549a00092e1697243[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Wed Jun 25 22:51:29 2025 +0700
+
+    ...
+
+[33mcommit 02af92d2a24423fed242a7794ff9d571f5bee910[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Wed Jun 25 22:38:22 2025 +0700
+
+    Update aesdsocket-start-stop
+
+[33mcommit 8eccc22c3e64da1f5b92e290ed51e3537fbf72a5[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Wed Jun 25 21:22:12 2025 +0700
+
+    update aesdsocket to run auto test
+
+[33mcommit 8a06f795e14eb349a1bdc3aa85c559598f01e9a6[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Wed Jun 25 10:29:59 2025 +0700
+
+    Update aesdsocket.c
+
+[33mcommit 3a36f13d9e231079ca291ce64cda44bc4aa1ae6b[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Wed Jun 25 07:26:48 2025 +0700
+
+    Update aesdsocket.c
+
+[33mcommit 42312777c1a9862be8bf4a26a69a37c40e24fc13[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Wed Jun 25 00:44:31 2025 +0700
+
+    Update aesdsocket.c
+
+[33mcommit 5a9d1530325e0a8c4d47d5312d0cc7ed62a82144[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Wed Jun 25 00:33:54 2025 +0700
+
+    Update aesdsocket.c
+
+[33mcommit b212dfaeeed25c67adc30a12229db2b3427c34eb[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Tue Jun 24 23:57:39 2025 +0700
+
+    fix \n when send data
+
+[33mcommit 1bf28b971c4fed45e4f308b07ffcf01b92dbce11[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Tue Jun 24 23:05:26 2025 +0700
+
+    fix makefile
+
+[33mcommit fd74560ce96f5f200e4fb7af8a62bd3d74fa1dcd[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Tue Jun 24 22:49:35 2025 +0700
+
+    fix build cross compile
+
+[33mcommit 94c32c4c0248a75db0c7b4b91e72273ec4090e22[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Tue Jun 24 00:10:59 2025 +0700
+
+    Update Makefile
+
+[33mcommit 0c3e244974df006c7cdb9784dd46a0b84186189c[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Mon Jun 23 23:54:14 2025 +0700
+
+    Update Makefile
+
+[33mcommit 3a112eac646598715b9e02f562f86fdac169c517[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Mon Jun 23 23:50:16 2025 +0700
+
+    Update Makefile
+
+[33mcommit 682387ccfb1d7292084df6e8150beed2260bb85f[m
+Author: tentui99 <159116357+tentui99@users.noreply.github.com>
+Date:   Mon Jun 23 23:36:35 2025 +0700
+
+    Update Makefile
+
+[33mcommit 31e1b12fb501a85bbe6cc1fd40b6233a6d77fe35[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Mon Jun 23 21:02:55 2025 +0700
+
+    use chmod
+
+[33mcommit 1afb0a5f98d9cf444c39e7401547266f8e97a8e2[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Mon Jun 23 20:42:58 2025 +0700
+
+    add file aesdsocket-start-stop
+
+[33mcommit 294c8f3dd7374aa4a273d3f0d2f79973ea10384d[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Mon Jun 23 19:31:55 2025 +0700
+
+    second commit
+
+[33mcommit 78ee091c35daf9a46f6921d28d0d8027665e3a68[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Sun Jun 22 21:52:24 2025 +0700
+
+    assignment3
+
+[33mcommit 18247ab80a51a98e5bfdeb20e87fb00d5cd5d004[m
+Author: tentui99 <tmanh24092001@gmail.com>
+Date:   Sun Jun 22 21:45:04 2025 +0700
+
+    first commit
